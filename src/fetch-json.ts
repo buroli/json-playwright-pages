@@ -10,9 +10,22 @@ async function fetchRemoteJson(jsonUrl: string): Promise<void> {
   });
 
   try {
-    const page = await browser.newPage();
+    const context = await browser.newContext({
+      userAgent:
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36',
+      viewport: { width: 1280, height: 720 },
+      locale: 'en-US',
+      timezoneId: 'UTC',
+      extraHTTPHeaders: {
+        Accept: 'application/json, text/plain, */*; q=0.01',
+        'Accept-Language': 'en-US,en;q=0.9',
+        Referer: 'https://example.com/',
+      },
+    });
+
+    const page = await context.newPage();
     const response = await page.goto(jsonUrl, {
-      waitUntil: 'commit',
+      waitUntil: 'domcontentloaded',
       timeout: 30_000,
     });
 
@@ -32,6 +45,8 @@ async function fetchRemoteJson(jsonUrl: string): Promise<void> {
     console.log(`Timestamp: ${new Date().toISOString()}`);
 
     if (!response.ok()) {
+      const snippet = text.replace(/\s+/g, ' ').trim().slice(0, 500);
+      console.error(`Server returned an error page snippet: ${snippet || '(empty body)'}`);
       throw new Error(`HTTP ${status} returned for ${jsonUrl}.`);
     }
 
